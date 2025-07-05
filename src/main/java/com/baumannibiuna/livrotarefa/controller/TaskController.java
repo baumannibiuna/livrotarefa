@@ -1,6 +1,9 @@
 package com.baumannibiuna.livrotarefa.controller;
 
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+
+import javax.validation.Valid;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -9,8 +12,6 @@ import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.PagedModel;
-import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,59 +36,47 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class TaskController {
 
-	private final PagedResourcesAssembler pagedResourcesAssembler;
-	private final TaskService taskService;
+    private final PagedResourcesAssembler<Task> pagedResourcesAssembler;
+    private final TaskService taskService;
 
-	@GetMapping(path = TaskUri.TASKS)
-	public ResponseEntity<?> getTasks(TaskDto taskDto, Pageable pageable,
-			PersistentEntityResourceAssembler resourceAssembler) {
-		log.info("TasksController: " + taskDto);
-		Page<Task> events = taskService.getTasks(pageable);
-		PagedModel<?> resource = pagedResourcesAssembler.toModel(events, resourceAssembler);
-		return ResponseEntity.ok(resource);
-	}
+    @GetMapping(path = TaskUri.TASKS)
+    public ResponseEntity<?> getTasks(Pageable pageable,
+            Link resourceAssembler) {
+        Page<Task> tasks = taskService.getTasks(pageable);
+        PagedModel<?> resource = pagedResourcesAssembler.toModel(tasks, resourceAssembler);
+        return ResponseEntity.ok(resource);
+    }
 
-	@GetMapping(path = TaskUri.TASK)
-	public ResponseEntity<?> getTask(@PathVariable("id") int taskId, Pageable pageable,
-			PersistentEntityResourceAssembler resourceAssembler) {
-		try {
-			log.info("TasksController:::" + taskId);
-			Task task = taskService.getTask(taskId);
-			Link selfLink = WebMvcLinkBuilder
-					.linkTo(methodOn(this.getClass()).getTask(taskId, pageable, resourceAssembler)).withSelfRel();
-			Link allTasksLink = WebMvcLinkBuilder.linkTo(this.getClass()).slash("/tasks").withRel("all tasks");
+    @GetMapping(path = TaskUri.TASK)
+    public ResponseEntity<?> getTask(@PathVariable("id") Long taskId, 
+            Pageable pageable, PersistentEntityResourceAssembler resourceAssembler) {
+        try {
+            Task task = taskService.getTask(taskId);
+            Link selfLink = linkTo(methodOn(this.getClass())
+                .getTask(taskId, pageable, resourceAssembler)).withSelfRel();
+            Link allTasksLink = linkTo(this.getClass()).slash("/tasks").withRel("all-tasks");
 
-			EntityModel<Task> entityModel = EntityModel.of(task);
-			entityModel.add(selfLink, allTasksLink);
+            EntityModel<Task> entityModel = EntityModel.of(task);
+            entityModel.add(selfLink, allTasksLink);
 
-			return ResponseEntity.ok(entityModel);
+            return ResponseEntity.ok(entityModel);
 
-		} catch (RuntimeException exc) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Task Not Found", exc);
-		}
-	}
+        } catch (RuntimeException exc) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Task Not Found", exc);
+        }
+    }
 
-	
-	@PostMapping(path = TaskUri.CREATE_TASK)
-	public ResponseEntity<?> createTask(@RequestBody TaskDto taskDto) {
-	    log.info("Dados recebidos: {}", taskDto);
-	    Task savedTask = taskService.saveTask(taskDto);
-	    return ResponseEntity.status(HttpStatus.CREATED).body(savedTask);
-	}
-/*
-	@PostMapping(path = TaskUri.CREATE_TASK)
-	public ResponseEntity<?> createTask(@RequestBody TaskDto taskDto, Pageable pageable,
-			PersistentEntityResourceAssembler resourceAssembler) {
-		log.info("TasksController: " + taskDto);
-		Task events = taskService.saveTask(taskDto);
-		Link selfLink = WebMvcLinkBuilder
-				.linkTo(methodOn(this.getClass()).createTask(taskDto, pageable, resourceAssembler)).withSelfRel();
-		Link allTasksLink = WebMvcLinkBuilder.linkTo(this.getClass()).slash("/tasks").withRel("all tasks");
-		EntityModel<Task> taskResource = EntityModel.of(events);
-		taskResource.add(selfLink, allTasksLink);
-		HttpHeaders responseHeaders = new HttpHeaders();
-		responseHeaders.set("CustomResponseHeader", "CustomValue");
-		return new ResponseEntity<EntityModel<Task>>(taskResource, responseHeaders, HttpStatus.CREATED);
-	}
-*/
+    @PostMapping(path = TaskUri.CREATE_TASK)
+    public ResponseEntity<?> createTask(@Valid @RequestBody TaskDto taskDto) {
+        Task savedTask = taskService.saveTask(taskDto);
+        
+        Link selfLink = linkTo(methodOn(this.getClass())
+            .getTask(savedTask.getId(), null, null)).withSelfRel();
+        Link allTasksLink = linkTo(this.getClass()).slash("/tasks").withRel("all-tasks");
+        
+        EntityModel<Task> resource = EntityModel.of(savedTask);
+        resource.add(selfLink, allTasksLink);
+        
+        return ResponseEntity.created(selfLink.toUri()).body(resource);
+    }
 }
