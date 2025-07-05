@@ -1,6 +1,9 @@
 package com.baumannibiuna.livrotarefa.entity;
 
 import lombok.Data;
+
+import java.time.LocalDateTime;
+
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
@@ -19,6 +22,15 @@ public class Task {
 	@Column
 	@NotNull(message="{NotNull.Task.description}")
 	private String description;
+
+	private LocalDateTime createdDate;
+	
+	public Task(Long id, String name, String description, LocalDateTime createdDate) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.createdDate = createdDate;
+    }
 	
 	
 }
