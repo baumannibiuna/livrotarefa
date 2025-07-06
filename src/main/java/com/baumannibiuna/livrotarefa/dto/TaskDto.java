@@ -2,7 +2,6 @@ package com.baumannibiuna.livrotarefa.dto;
 
 
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Null;
 import javax.validation.constraints.Size;
 
 import lombok.Data;
@@ -12,10 +11,10 @@ import lombok.Data;
 @Data
 public class TaskDto {
 
-	public TaskDto(Object object, String string, String string2, Object object2) {
+	public TaskDto() {
 		// TODO Auto-generated constructor stub
 	}
-	@Null(message = "O ID deve ser nulo para criaçao")
+
 	private long id;
 	
 	@NotBlank(message = "Nome obrigatorio")
@@ -25,7 +24,17 @@ public class TaskDto {
 	@NotBlank(message = "Descricao obrigatoria")
 	@Size(max = 150, message = "Use no maximo 150 caracteres")
 	private String description;
-	private String createdDate;
+
+	public void setId(Object object) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public Object getId(int i) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 	
 	
 	
